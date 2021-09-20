@@ -1,6 +1,6 @@
-#pip install kivy
-#pip install kivymd
-#pip install https://github.com/kivymd/KivyMD/archive/3274d62.zip
+# pip install kivy
+# pip install kivymd
+# pip install https://github.com/kivymd/KivyMD/archive/3274d62.zip
 
 from kivy.lang import Builder
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -21,7 +21,6 @@ from kivy.clock import Clock
 
 from kivymd.uix.picker import MDDatePicker
 import datetime
-
 
 KV = '''
 #https://stackoverflow.com/questions/65698145/kivymd-tab-name-containing-icons-and-text
@@ -280,7 +279,6 @@ class MortgageCalculatorApp(MDApp):
             background_color=(0.1, 0.1, 0.1, 1.0),
         )
 
-
     def set_item(self, instance_menu, instance_menu_item):
         def set_item(interval):
             self.screen.ids.payment_type.text = instance_menu_item.text
@@ -312,11 +310,11 @@ class MortgageCalculatorApp(MDApp):
             "youtube": "My YouTube",
             "coffee": "Donate author",
             "github": "Source code",
-            "share-variant": "Share app",  #air-horn
+            "share-variant": "Share app",  # air-horn
             "shield-sun": "Dark/Light",
         }
         icons_item_menu_tabs = {
-            "calculator-variant": "Input",  #ab-testing
+            "calculator-variant": "Input",  # ab-testing
             "table-large": "Table",
             "chart-areaspline": "Graph",
             "chart-pie": "Chart",  # chart-arc
@@ -347,6 +345,41 @@ class MortgageCalculatorApp(MDApp):
         print("tab clicked! " + tab_text)
 
     def on_star_click(self):
-        print("star clicked! ")
+        print("star clicked!")
+
+    def calc_table(self, *args):
+        print("button1 pressed")
+        start_date = self.screen.ids.start_date.text
+        loan = self.screen.ids.loan.text
+        months = self.screen.ids.months.text
+        interest = self.screen.ids.interest.text
+        payment_type = self.screen.ids.payment_type.text
+        print(start_date + " " + loan + " " + months + " " + interest + " " + payment_type)
+        # convert to date object, float, and so on
+        start_date = datetime.datetime.strptime(self.screen.ids.start_date.text, "%d-%m-%Y").date()
+        loan = float(loan)
+        months = int(months)
+        interest = float(interest)
+
+        # annuity payment
+        # https://temabiz.com/finterminy/ap-formula-i-raschet-annuitetnogo-platezha.html
+        percent = interest / 100 / 12
+        monthly_payment = loan * (percent + percent / ((1 + percent) ** months - 1))
+        print(monthly_payment)
+
+        debt_end_month = loan
+        for i in range(0, months):
+            repayment_of_interest = debt_end_month * percent
+            repayment_of_loan_body = monthly_payment-repayment_of_interest
+            debt_end_month = debt_end_month-repayment_of_loan_body
+            print(monthly_payment, repayment_of_interest, repayment_of_loan_body, debt_end_month)
+
+        total_amount_of_payments = monthly_payment * months
+        overpayment_loan = total_amount_of_payments - loan
+        effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12))*100
+        print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
+
+        pass
+
 
 MortgageCalculatorApp().run()
