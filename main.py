@@ -1,6 +1,7 @@
 # pip install kivy
 # pip install kivymd
 # pip install https://github.com/kivymd/KivyMD/archive/3274d62.zip
+import calendar
 
 from kivy.lang import Builder
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -21,6 +22,10 @@ from kivy.clock import Clock
 
 from kivymd.uix.picker import MDDatePicker
 import datetime
+import calendar
+
+from kivy.graphics import Color, Rectangle, Line
+from random import random as r
 
 KV = '''
 #https://stackoverflow.com/questions/65698145/kivymd-tab-name-containing-icons-and-text
@@ -203,16 +208,99 @@ Screen:
                             id: tab2
                             name: 'tab2'
                             text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['table-large']}[/size][/font] Table"
-                                                
+ 
+                            BoxLayout:
+                                orientation: 'vertical'
+                                padding: "10dp"
+                                
+                                ScrollView:
+                                
+                                    MDList:
+                                        id: table_list
+                                               
                         Tab:
                             id: tab3
                             name: 'tab3'
                             text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['chart-areaspline']}[/size][/font] Graph"
+                            
+                            BoxLayout:
+                                orientation: 'vertical'
+                                padding: "10dp"
                                 
+                                
+                                BoxLayout:
+                                    orientation: 'vertical'
+                                    padding: "10dp"
+                                    size_hint_x: 1
+                                    size_hint_y: None
+                                    height: 50
+                                                                       
+                                    canvas:
+                                        Color:
+                                            rgba: 0.2, 0.2, 0.2, 0.1
+                                        Rectangle:
+                                            size: self.size
+                                            pos: self.pos
+                                
+                                    MDLabel:
+                                        text: "Payment"
+                                        halign: "center"
+                                        font_style: "H5"
+                                        height: "48dp"
+                                    
+                                BoxLayout:
+                                    orientation: 'vertical'
+                                    padding: "10dp"
+                                    id: graph
+                                
+                                    canvas:
+                                        Color:
+                                            rgba: 1, 1, 1, .6
+                                        Rectangle:
+                                            size: self.size
+                                            pos: self.pos
+                               
                         Tab:
                             id: tab4
                             name: 'tab4'
-                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['chart-pie']}[/size][/font] chart-arc"
+                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['chart-pie']}[/size][/font] Chart"
+                            
+                            BoxLayout:
+                                orientation: 'vertical'
+                                padding: "10dp"
+
+
+                                BoxLayout:
+                                    orientation: 'vertical'
+                                    padding: "10dp"
+                                    size_hint_x: 1
+                                    size_hint_y: None
+                                    height: 50
+                                                                       
+                                    canvas:
+                                        Color:
+                                            rgba: 0.2, 0.2, 0.2, 0.1
+                                        Rectangle:
+                                            size: self.size
+                                            pos: self.pos
+                                
+                                    MDLabel:
+                                        text: "Total payments"
+                                        haligh: "center"
+                                        font_style: "H5"
+                                        height: "48dp"
+                                    
+                                BoxLayout:
+                                    orientation: 'vertical'
+                                    padding: "10dp"
+                                    id: chart
+                                    
+                                    canvas:
+                                        Color:
+                                            rgba: 1, 1, 1, .6
+                                        Rectangle:
+                                            size: self.size
+                                            pos: self.pos                                                      
                                 
                         Tab:
                             id: tab5
@@ -226,6 +314,36 @@ Screen:
             ContentNavigationDrawer:
                 id: content_drawer
                 
+<ItemTable>:
+    size_hint_y: None
+    height: "42dp"
+    
+    canvas:
+        Color:
+            rgba: root.color
+        Rectangle:
+            size: self.size
+            pos: self.pos
+            
+    MDLabel:
+        text: root.num
+        halign: "center"
+    MDLabel:   
+        text: root.date
+        halign: "center"     
+    MDLabel:   
+        text: root.payment
+        halign: "center"          
+    MDLabel:   
+        text: root.interest
+        halign: "center"  
+    MDLabel:   
+        text: root.principal
+        halign: "center"  
+    MDLabel:   
+        text: root.debt
+        halign: "center"       
+                      
 '''
 
 
@@ -252,6 +370,43 @@ class DrawerList(ThemableBehavior, MDList):
 
 class Tab(MDFloatLayout, MDTabsBase):
     pass
+
+
+class ItemTable(MDBoxLayout):
+    num = StringProperty()
+    date = StringProperty()
+    payment = StringProperty()
+    interest = StringProperty()
+    principal = StringProperty()
+    debt = StringProperty()
+    color = ListProperty()
+
+
+# https://stackoverflow.com/questions/2249956/how-to-get-the-same-day-of-next-month
+def next_month_date(d):
+    _year = d.year + (d.month // 12)
+    _month = 1 if (d.month // 12) else d.month + 1
+    next_month_len = calendar.monthrange(_year, _month)[1]
+    next_month = d
+    if d.day > next_month_len:
+        next_month = next_month.replace(day=next_month_len)
+    next_month = next_month.replace(year=_year, month=_month)
+    return next_month
+
+
+#https://kivy.org/doc/stable/examples/gen__canvas__canvas_stress__py.html
+def show_canvas_stress(wid):
+    with wid.canvas:
+        for x in range(10):
+            Color(r(), 1, 1, mode='hsv')
+            Rectangle(pos=(r() * wid.width + wid.x, r() * wid.height + wid.y), size=(20, 20))
+
+
+
+def draw_graph(wid):
+    with wid.canvas:
+        Color(.2, .2, .2, 1)
+        Line(rectangle=(20, 20, wid.width-20, wid.height-20), width=2)
 
 
 class MortgageCalculatorApp(MDApp):
@@ -370,14 +525,74 @@ class MortgageCalculatorApp(MDApp):
         debt_end_month = loan
         for i in range(0, months):
             repayment_of_interest = debt_end_month * percent
-            repayment_of_loan_body = monthly_payment-repayment_of_interest
-            debt_end_month = debt_end_month-repayment_of_loan_body
+            repayment_of_loan_body = monthly_payment - repayment_of_interest
+            debt_end_month = debt_end_month - repayment_of_loan_body
             print(monthly_payment, repayment_of_interest, repayment_of_loan_body, debt_end_month)
 
         total_amount_of_payments = monthly_payment * months
         overpayment_loan = total_amount_of_payments - loan
-        effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12))*100
+        effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
         print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
+
+        # https://kivymd.readthedocs.io/en/latest/themes/color-definitions/
+        self.screen.ids.table_list.clear_widgets()
+        self.screen.ids.table_list.add_widget(
+            ItemTable(
+                color=(0.2, 0.2, 0.2, 0.5),
+                num="№",
+                date="Date",
+                payment="Payment",
+                interest="Interest",
+                principal="Principal",
+                debt="Debt",
+            )
+        )
+
+        debt_end_month = loan
+        for i in range(0, months):
+            row_color = (1, 1, 1, 1)
+            if i % 2 != 0:
+                row_color = (0.2, 0.2, 0.2, 0.1)
+            repayment_of_interest = debt_end_month * percent
+            repayment_of_loan_body = monthly_payment - repayment_of_interest
+            debt_end_month = debt_end_month - repayment_of_loan_body
+
+            self.screen.ids.table_list.add_widget(
+                ItemTable(
+                    color=row_color,  # (0, 0, 0, 1),
+                    num=str(i + 1),
+                    date=start_date.strftime("%d-%m-%y"),
+                    payment=str(round(repayment_of_interest, 2)),
+                    interest=str(round(repayment_of_interest, 2)),
+                    principal=str(round(repayment_of_loan_body, 2)),
+                    debt=str(round(debt_end_month, 2)),
+
+                )
+            )
+
+            # d = datetime.datetime.today()
+            # print(next_month_date())
+            # start_date = start_date + datetime.timedelta(days=30)
+            start_date = next_month_date(start_date)
+
+        # wid = self.screen.ids.graph
+        # with wid.canvas:
+        #     for x in range(10):
+        #         Color(r(), 1, 1, mode='hsv')
+        #         Rectangle(pos=(r() * wid.width + wid.x,
+        #                        r() * wid.height + wid.y), size=(20, 20))
+        #
+        #         wid = self.screen.ids.chart
+        #         with wid.canvas:
+        #             for x in range(10):
+        #                 Color(r(), 1, 1, mode='hsv')
+        #                 Rectangle(pos=(r() * wid.width + wid.x,
+        #                        r() * wid.height + wid.y), size=(20, 20))
+
+        show_canvas_stress(self.screen.ids.graph)
+        show_canvas_stress(self.screen.ids.chart)
+
+        draw_graph(self.screen.ids.graph)
 
         pass
 
