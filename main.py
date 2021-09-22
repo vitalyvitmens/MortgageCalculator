@@ -467,7 +467,7 @@ def draw_chart(wid, total_amount_of_payments, loan):
     circle_width = wid.width
     center_x = 0
     center_y = wid.height // 2 - circle_width // 2
-    if (wid.width > wid.height):
+    if wid.width > wid.height:
         circle_width = wid.height
         center_x = wid.width // 2 - circle_width // 2
         center_y = 0
