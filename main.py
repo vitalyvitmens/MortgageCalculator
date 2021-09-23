@@ -33,6 +33,9 @@ from random import random as r
 from kivymd.uix.datatables import MDDataTable
 from kivy.metrics import dp
 
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.dialog import MDDialog
+
 KV = '''
 #https://stackoverflow.com/questions/65698145/kivymd-tab-name-containing-icons-and-text
 # this import will prevent disappear tabs through some clicks on them)))
@@ -136,6 +139,7 @@ Screen:
                                         line_color_focus: 0,0,0,1
                                         text_color: 0,0,0,1
                                         current_hint_text_color: 0,0,0,1
+                                        text_hint_color: 0,0,1,1
                                                 
                                 BoxLayout:
                                     orientation: 'horizontal'
@@ -189,11 +193,6 @@ Screen:
                                         MDRectangleFlatIconButton:
                                             icon: "android"
                                             text: "BUTTON1"
-                                            theme_text_color: "Custom"
-                                            text_color: 1, 1, 1, 1
-                                            line_color: 0, 0, 0, 1
-                                            icon_color: 1, 0, 0, 1
-                                            md_bg_color: 0.1, 0.1, 0.1, 1
                                             adaptive_width: True
                                             on_release: app.calc_table(*args) 
                                             
@@ -207,7 +206,8 @@ Screen:
                                             text_color: 1, 1, 1, 1
                                             line_color: 0, 0, 0, 1
                                             icon_color: 1, 0, 0, 1
-                                            md_bg_color: 0.1, 0.1, 0.1, 1
+                                            md_bg_color: 0, 0, 0, 1
+                                            on_release: app.share_it(*args)
         
                                     AnchorLayout:
                                         anchor_x: 'center'   
@@ -216,20 +216,73 @@ Screen:
                                             text: "Test Ok"
                                             size_hint_y: .5
                                             background_color: (0.1, 0.1, 0.1, 1.0)
-        
-                          
+                                            
+                                BoxLayout:
+                                    orientation: 'horizontal'
+                                    padding: "10dp"     
+                                                         
+                                    MDLabel:
+                                        text: "Payment"
+                                        
+                                    MDTextField:
+                                        id: payment_label
+                                        hint_text: ""
+                                        disabled: True
+                                        
+                                BoxLayout:
+                                    orientation: 'horizontal'
+                                    padding: "10dp"  
+                                    
+                                    MDLabel:
+                                        text: "Total interest"  
+                                        
+                                    MDTextField:
+                                        id: overpayment_loan_label
+                                        hint_text: ""
+                                        disabled: True
+                                        
+                                BoxLayout:
+                                    orientation: 'horizontal'
+                                    padding: "10dp"  
+                                    
+                                    MDLabel:
+                                        text: "Total payments" 
+                                        
+                                    MDTextField:
+                                        id: total_amount_of_payments_label
+                                        hint_text: ""
+                                        disabled: True
+                                        
+                                BoxLayout:
+                                    orientation: 'horizontal'
+                                    padding: "10dp" 
+                                    
+                                    MDLabel:
+                                        text: "Effective %" 
+                                        
+                                    MDTextField:
+                                        id: effective_interest_rate_label
+                                        hint_text: ""
+                                        disabled: True
+                                        text_hint_color: [0,0,1,1]
+                                    
                         Tab:
                             id: tab2
                             name: 'tab2'
                             text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['table-large']}[/size][/font] Table"
- 
+                            
+                            
                             ScrollView:
-                                
+                            
                                 BoxLayout:
                                     orientation: 'vertical'
                                     id: calc_data_table
- 
-                                                                             
+                                    
+                            MDFloatingActionButton:
+                                icon: "email-outline"
+                                pos: 20, 20
+                                on_release: app.show_confirmation_dialog()
+                                
                         Tab:
                             id: tab3
                             name: 'tab3'
@@ -239,23 +292,22 @@ Screen:
                                 orientation: 'vertical'
                                 padding: "10dp"
                                 
-                                
                                 BoxLayout:
                                     orientation: 'vertical'
                                     padding: "10dp"
                                     size_hint_x: 1
                                     size_hint_y: None
                                     height: 50
-                                                                       
+                                    
                                     canvas:
                                         Color:
                                             rgba: 0.2, 0.2, 0.2, 0.1
                                         Rectangle:
                                             size: self.size
                                             pos: self.pos
-                                
+                                            
                                     MDLabel:
-                                        text: "Payment"
+                                        text: "Payment"            
                                         halign: "center"
                                         font_style: "H5"
                                         height: "48dp"
@@ -354,8 +406,18 @@ Screen:
 
             ContentNavigationDrawer:
                 id: content_drawer     
-        
-                                 
+
+<ContentDialogSend> 
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "120dp"
+    
+    MDTextField:
+        hint_text: "city"
+
+    MDTextField:
+        hint_text: "street"                                                   
 '''
 
 
@@ -381,6 +443,10 @@ class DrawerList(ThemableBehavior, MDList):
 
 
 class Tab(MDFloatLayout, MDTabsBase):
+    pass
+
+
+class ContentDialogSend(MDBoxLayout):
     pass
 
 
@@ -451,15 +517,41 @@ def draw_chart(wid, total_amount_of_payments, loan):
                 angle_end=360 - int(interest_chart))
 
 
+# https://pypi.org/project/kivy-ios/
+# https://github.com/kivy/kivy-ios/issues/411
+# -----------------
+# https://stackoverflow.com/questions/38983649/kivy-android-share-image
+# https://stackoverflow.com/questions/63322944/how-to-use-share-button-to-share-content-of-my-app
+# Native method for Android.
+def share(title, text):
+    from kivy import platform
+
+    print(platform)
+    if platform == 'android':
+        from jnius import autoclass
+
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        String = autoclass('java.lang.String')
+        intent = Intent()
+        intent.setAction(Intent.ACTION_SEND)
+        intent.putExtra(Intent.EXTRA_TEXT, String('{}'.format(text)))
+        intent.setType('text/plain')
+        chooser = Intent.createChooser(intent, String(title))
+        PythonActivity.mActivity.startActivity(chooser)
+
+
 class MortgageCalculatorApp(MDApp):
     title = "Mortgage Calculator"
     by_who = "автор: Меншиков В.А."
+    dialog = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.theme_cls.primary_palette = "Brown"
         self.theme_cls.primary_hue = "A100"
+        self.data_for_calc_is_changed = True
 
         self.screen = Builder.load_string(KV)
         # https://kivymd.readthedocs.io/en/latest/components/menu/?highlight=MDDropDownItem#center-position
@@ -496,17 +588,35 @@ class MortgageCalculatorApp(MDApp):
     def build(self):
         # self.theme_cls.primary_palette = "Brown"
         # self.theme_cls.primary_hue = "A100"
-        self.theme_cls.theme_style = "Light"    # "Dark"
+        self.theme_cls.theme_style = "Light"  # "Dark"
         # return Builder.load_string(KV)
         return self.screen
 
     def on_start(self):
         self.screen.ids.start_date.text = datetime.date.today().strftime("%d-%m-%Y")
-        self.screen.ids.loan.text = "5000000"
-        self.screen.ids.months.text = "120"
-        self.screen.ids.interest.text = "9.5"
+        self.screen.ids.loan.text = "500000"
+        self.screen.ids.months.text = "12"
+        self.screen.ids.interest.text = "22"
         self.screen.ids.payment_type.text = "annuity"
 
+        loan = self.screen.ids.loan.text
+        months = self.screen.ids.months.text
+        interest = self.screen.ids.interest.text
+        loan = float(loan)
+        months = int(months)
+        interest = float(interest)
+        percent = interest / 100 / 12
+        monthly_payment = loan * (percent + percent / ((1 + percent) ** months - 1))
+        total_amount_of_payments = monthly_payment * months
+        overpayment_loan = total_amount_of_payments - loan
+        effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
+
+        self.screen.ids.payment_label.text = str(round(monthly_payment, 2))
+        self.screen.ids.total_amount_of_payments_label.text = str(round(total_amount_of_payments, 2))
+        self.screen.ids.overpayment_loan_label.text = str(round(overpayment_loan, 2))
+        self.screen.ids.effective_interest_rate_label.text = str(round(effective_interest_rate, 2))
+
+        # icons names you can get here: https://materialdesignicons.com/
         icons_item_menu_lines = {
             "account-cowboy-hat": "About author",
             "youtube": "My YouTube",
@@ -535,10 +645,10 @@ class MortgageCalculatorApp(MDApp):
         #         )
         #     )
 
-        #print(self.root.ids.tabs.get_tab_list())
+        # print(self.root.ids.tabs.get_tab_list())
 
-    #def on_tab_switch(selfself, *args):
-    def on_tab_switch(self, instance_tabs, instance_tab, instance_tab_label, tab_text):
+    def on_tab_switch(self, *args):
+        # def on_tab_switch(self, instance_tabs, instance_tab, instance_tab_label, tab_text):
         '''Called when switching tabs.
 
                 :type instance_tabs: <kivymd.uix.tab.MDTabs object>;
@@ -546,11 +656,14 @@ class MortgageCalculatorApp(MDApp):
                 :param instance_tab_label: <kivymd.uix.tab.MDTabsLabel object>;
                 :param tab_text: text or name icon of tab;
                 '''
-        #print(instance_tab.name + " : " + tab_text)
+        # print(instance_tab.name + " : " + tab_text)
         # print(args)
         # print("tab clicked! " + instance_tab.ids.label.text)
         ############# instance_tab/ids.label.text = tab_text
         # print(instance_tab.ids.label.text)
+        if self.data_for_calc_is_changed:
+            self.calc_table(self, args)
+            self.data_for_calc_is_changed = False
         pass
 
     def on_star_click(self):
@@ -591,7 +704,6 @@ class MortgageCalculatorApp(MDApp):
         effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
         # print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
 
-
         start_date = next_month_date(start_date)
 
         # show_canvas_stress(self.screen.ids.graph)
@@ -621,6 +733,26 @@ class MortgageCalculatorApp(MDApp):
         self.screen.ids.calc_data_table.add_widget(data_tables)
 
         pass
+
+    def show_confirmation_dialog(self):
+        if not self.dialog:
+            self.dialog = MDDialog(
+                title="Share it:",
+                type="custom",
+                content_cls=ContentDialogSend(),
+                buttons=[
+                    MDFlatButton(
+                        text="CANCEL", text_color=self.theme_cls.primary_color
+                    ),
+                    MDFlatButton(
+                        text="SEND", text_color=self.theme_cls.primary_color
+                    ),
+                ],
+            )
+        self.dialog.open()
+
+    def share_it(self, *args):
+        share("title_share", "this content to share!")
 
 
 MortgageCalculatorApp().run()
