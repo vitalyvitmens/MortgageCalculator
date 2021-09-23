@@ -30,6 +30,9 @@ import calendar
 from kivy.graphics import Color, Rectangle, Line, Ellipse
 from random import random as r
 
+from kivymd.uix.datatables import MDDataTable
+from kivy.metrics import dp
+
 KV = '''
 #https://stackoverflow.com/questions/65698145/kivymd-tab-name-containing-icons-and-text
 # this import will prevent disappear tabs through some clicks on them)))
@@ -129,6 +132,10 @@ Screen:
                                         id: start_date
                                         hint_text: "Start date"
                                         on_focus: if self.focus: app.date_dialog.open()
+                                        color_mode: 'custom'
+                                        line_color_focus: 0,0,0,1
+                                        text_color: 0,0,0,1
+                                        current_hint_text_color: 0,0,0,1
                                                 
                                 BoxLayout:
                                     orientation: 'horizontal'
@@ -139,7 +146,11 @@ Screen:
                                     MDTextField:
                                         id: loan
                                         hint_text: "Loan"
-                                                
+                                        color_mode: 'custom'
+                                        line_color_focus: 0,0,0,1
+                                        text_color: 0,0,0,1
+                                        current_hint_text_color: 0,0,0,1
+                                                                                        
                                 BoxLayout:
                                     orientation: 'horizontal'
                                             
@@ -212,15 +223,13 @@ Screen:
                             name: 'tab2'
                             text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['table-large']}[/size][/font] Table"
  
-                            BoxLayout:
-                                orientation: 'vertical'
-                                padding: "10dp"
+                            ScrollView:
                                 
-                                ScrollView:
-                                
-                                    MDList:
-                                        id: table_list
-                                               
+                                BoxLayout:
+                                    orientation: 'vertical'
+                                    id: calc_data_table
+ 
+                                                                             
                         Tab:
                             id: tab3
                             name: 'tab3'
@@ -344,38 +353,9 @@ Screen:
             id: nav_drawer
 
             ContentNavigationDrawer:
-                id: content_drawer
-                
-<ItemTable>:
-    size_hint_y: None
-    height: "42dp"
-    
-    canvas:
-        Color:
-            rgba: root.color
-        Rectangle:
-            size: self.size
-            pos: self.pos
-            
-    MDLabel:
-        text: root.num
-        halign: "center"
-    MDLabel:   
-        text: root.date
-        halign: "center"     
-    MDLabel:   
-        text: root.payment
-        halign: "center"          
-    MDLabel:   
-        text: root.interest
-        halign: "center"  
-    MDLabel:   
-        text: root.principal
-        halign: "center"  
-    MDLabel:   
-        text: root.debt
-        halign: "center"       
-                      
+                id: content_drawer     
+        
+                                 
 '''
 
 
@@ -402,16 +382,6 @@ class DrawerList(ThemableBehavior, MDList):
 
 class Tab(MDFloatLayout, MDTabsBase):
     pass
-
-
-class ItemTable(MDBoxLayout):
-    num = StringProperty()
-    date = StringProperty()
-    payment = StringProperty()
-    interest = StringProperty()
-    principal = StringProperty()
-    debt = StringProperty()
-    color = ListProperty()
 
 
 # https://stackoverflow.com/questions/2249956/how-to-get-the-same-day-of-next-month
@@ -487,6 +457,10 @@ class MortgageCalculatorApp(MDApp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.theme_cls.primary_palette = "Brown"
+        self.theme_cls.primary_hue = "A100"
+
         self.screen = Builder.load_string(KV)
         # https://kivymd.readthedocs.io/en/latest/components/menu/?highlight=MDDropDownItem#center-position
         # menu_items = [{"icon": "git", "text": f"Item {i}"} for i in range(5)]
@@ -503,7 +477,6 @@ class MortgageCalculatorApp(MDApp):
         # https://kivymd.readthedocs.io/en/latest/components/pickers/?highlight=date%20picker#
         self.date_dialog = MDDatePicker(
             callback=self.get_date,
-            background_color=(0.1, 0.1, 0.1, 1.0),
         )
 
     def set_item(self, instance_menu, instance_menu_item):
@@ -521,7 +494,9 @@ class MortgageCalculatorApp(MDApp):
         self.screen.ids.start_date.text = date.strftime("%d-%m-%Y")  # str(date)
 
     def build(self):
-        # self.theme_cls.theme_style = "Light"  # "Dark"  # "Light"
+        # self.theme_cls.primary_palette = "Brown"
+        # self.theme_cls.primary_hue = "A100"
+        self.theme_cls.theme_style = "Light"    # "Dark"
         # return Builder.load_string(KV)
         return self.screen
 
@@ -560,19 +535,26 @@ class MortgageCalculatorApp(MDApp):
         #         )
         #     )
 
+        #print(self.root.ids.tabs.get_tab_list())
+
+    #def on_tab_switch(selfself, *args):
     def on_tab_switch(self, instance_tabs, instance_tab, instance_tab_label, tab_text):
         '''Called when switching tabs.
 
-        :type instance_tabs: <kivymd.uix.tab.MDTabs object>;
-        :param instance_tab: <__main__.Tab object>;
-        :param instance_tab_label: <kivymd.uix.tab.MDTabsLabel object>;
-        :param tab_text: text or name icon of tab;
-        '''
-
-        print("tab clicked! " + tab_text)
+                :type instance_tabs: <kivymd.uix.tab.MDTabs object>;
+                :param instance_tab: <__main__.Tab object>;
+                :param instance_tab_label: <kivymd.uix.tab.MDTabsLabel object>;
+                :param tab_text: text or name icon of tab;
+                '''
+        #print(instance_tab.name + " : " + tab_text)
+        # print(args)
+        # print("tab clicked! " + instance_tab.ids.label.text)
+        ############# instance_tab/ids.label.text = tab_text
+        # print(instance_tab.ids.label.text)
+        pass
 
     def on_star_click(self):
-        print("star clicked!")
+        pass
 
     def calc_table(self, *args):
         print("button1 pressed")
@@ -588,6 +570,7 @@ class MortgageCalculatorApp(MDApp):
         months = int(months)
         interest = float(interest)
 
+        row_data_for_tab = []
         # annuity payment
         # https://temabiz.com/finterminy/ap-formula-i-raschet-annuitetnogo-platezha.html
         percent = interest / 100 / 12
@@ -600,66 +583,16 @@ class MortgageCalculatorApp(MDApp):
             repayment_of_loan_body = monthly_payment - repayment_of_interest
             debt_end_month = debt_end_month - repayment_of_loan_body
             # print(monthly_payment, repayment_of_interest, repayment_of_loan_body, debt_end_month)
-
+            row_data_for_tab.append(
+                [i + 1, start_date.strftime("%d-%m-%Y"), round(monthly_payment, 2), round(repayment_of_interest, 2),
+                 round(repayment_of_loan_body, 2), round(debt_end_month, 2)])
         total_amount_of_payments = monthly_payment * months
         overpayment_loan = total_amount_of_payments - loan
         effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
         # print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
 
-        # https://kivymd.readthedocs.io/en/latest/themes/color-definitions/
-        self.screen.ids.table_list.clear_widgets()
-        self.screen.ids.table_list.add_widget(
-            ItemTable(
-                color=(0.2, 0.2, 0.2, 0.5),
-                num="№",
-                date="Date",
-                payment="Payment",
-                interest="Interest",
-                principal="Principal",
-                debt="Debt",
-            )
-        )
 
-        debt_end_month = loan
-        for i in range(0, months):
-            row_color = (1, 1, 1, 1)
-            if i % 2 != 0:
-                row_color = (0.2, 0.2, 0.2, 0.1)
-            repayment_of_interest = debt_end_month * percent
-            repayment_of_loan_body = monthly_payment - repayment_of_interest
-            debt_end_month = debt_end_month - repayment_of_loan_body
-
-            self.screen.ids.table_list.add_widget(
-                ItemTable(
-                    color=row_color,  # (0, 0, 0, 1),
-                    num=str(i + 1),
-                    date=start_date.strftime("%d-%m-%y"),
-                    payment=str(round(repayment_of_interest, 2)),
-                    interest=str(round(repayment_of_interest, 2)),
-                    principal=str(round(repayment_of_loan_body, 2)),
-                    debt=str(round(debt_end_month, 2)),
-
-                )
-            )
-
-            # d = datetime.datetime.today()
-            # print(next_month_date())
-            # start_date = start_date + datetime.timedelta(days=30)
-            start_date = next_month_date(start_date)
-
-        # wid = self.screen.ids.graph
-        # with wid.canvas:
-        #     for x in range(10):
-        #         Color(r(), 1, 1, mode='hsv')
-        #         Rectangle(pos=(r() * wid.width + wid.x,
-        #                        r() * wid.height + wid.y), size=(20, 20))
-        #
-        #         wid = self.screen.ids.chart
-        #         with wid.canvas:
-        #             for x in range(10):
-        #                 Color(r(), 1, 1, mode='hsv')
-        #                 Rectangle(pos=(r() * wid.width + wid.x,
-        #                        r() * wid.height + wid.y), size=(20, 20))
+        start_date = next_month_date(start_date)
 
         # show_canvas_stress(self.screen.ids.graph)
         show_canvas_stress(self.screen.ids.chart)
@@ -669,6 +602,23 @@ class MortgageCalculatorApp(MDApp):
 
         self.screen.ids.chart.canvas.clear()
         draw_chart(self.screen.ids.chart, total_amount_of_payments, loan)
+
+        # https://kivymd.readthedocs.io/en/latest/components/datatables/?highlight=datatable
+        data_tables = MDDataTable(
+            use_pagination=True,
+            rows_num=10,
+            column_data=[
+                ("№", dp(10)),
+                ("Date", dp(20)),
+                ("Payment", dp(20)),
+                ("Interest", dp(20)),
+                ("Principal", dp(20)),
+                ("Debt", dp(20)),
+            ],
+            row_data=row_data_for_tab,
+        )
+        self.screen.ids.calc_data_table.clear_widgets()
+        self.screen.ids.calc_data_table.add_widget(data_tables)
 
         pass
 
