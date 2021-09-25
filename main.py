@@ -1,11 +1,3 @@
-import kivy
-import kivymd
-# pip install kivy
-# pip install kivymd
-# pip install https://github.com/kivymd/KivyMD/archive/3274d62.zip
-import calendar
-
-from kivy.input.providers.mouse import Ellipse
 from kivy.lang import Builder
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.properties import StringProperty, ListProperty
@@ -14,11 +6,13 @@ from kivymd.app import MDApp
 from kivymd.theming import ThemableBehavior
 from kivymd.uix.list import OneLineIconListItem, MDList
 
-from kivymd.uix.tab import MDTabsBase
 from kivymd.uix.floatlayout import MDFloatLayout
+from kivymd.uix.tab import MDTabsBase
 
 from kivymd.font_definitions import fonts
 from kivymd.icon_definitions import md_icons
+
+from kivymd.uix.label import MDLabel
 
 from kivymd.uix.menu import MDDropdownMenu
 from kivy.clock import Clock
@@ -39,529 +33,71 @@ from kivymd.uix.dialog import MDDialog
 from kivy.uix.textinput import TextInput
 
 import locale
+
 # print(locale.getlocale())
 print(locale.getdefaultlocale())
 
-KV = '''
-#https://stackoverflow.com/questions/65698145/kivymd-tab-name-containing-icons-and-text
-# this import will prevent disappear tabs through some clicks on them)))
-#:import md_icons kivymd.icon_definitions.md_icons
-#:import fonts kivymd.font_definitions.fonts
 
-# Menu item in the DrawerList list.
-<ItemDrawer>:
-    theme_text_color: "Custom"
-    on_release: self.parent.set_color_item(self)
+# internationalized Kivy Application
+# https://github.com/tito/kivy-gettext-example
+import gettext
+from os.path import dirname, join
 
-    IconLeftWidget:
-        id: icon
-        icon: root.icon
-        theme_text_color: "Custom"
-        text_color: root.text_color
-        
-        
-<ContentNavigationDrawer>:
-    orientation: "vertical"
-    padding: "8dp"
-    spacing: "8dp"
-
-    AnchorLayout:
-        anchor_x: "left"
-        size_hint_y: None
-        height: avatar.height
-
-        Image:
-            id: avatar
-            size_hint: None, None
-            size: "56dp", "56dp"
-            source: "data/logo/kivy-icon-256.png"
-
-    MDLabel:
-        text: app.title
-        font_style: "Button"
-        size_hint_y: None
-        height: self.texture_size[1]
-
-    MDLabel:
-        text: app.by_who
-        font_style: "Caption"
-        size_hint_y: None
-        height: self.texture_size[1]
+from kivy.app import App
+from kivy.lang import Observable
+from kivy.properties import StringProperty
 
 
+class Lang(Observable):
+    observers = []
+    lang = None
 
-    ScrollView:
+    def __init__(self, defaultlang):
+        super(Lang, self).__init__()
+        self.ugettext = None
+        self.lang = defaultlang
+        self.switch_lang(self.lang)
 
-        DrawerList:
-            id: md_list
-          
-            
-            
-Screen:
+    def _(self, text):
+        return self.ugettext(text)
 
-    MDNavigationLayout:
+    def fbind(self, name, func, args, **kwargs):
+        if name == "_":
+            self.observers.append((func, args, kwargs))
+        else:
+            return super(Lang, self).fbind(name, func, *args, **kwargs)
 
-        ScreenManager:
+    def funbind(self, name, func, args, **kwargs):
+        if name == "_":
+            key = (func, args, kwargs)
+            if key in self.observers:
+                self.observers.remove(key)
+        else:
+            return super(Lang, self).funbind(name, func, *args, **kwargs)
 
-            Screen:
+    def switch_lang(self, lang):
+        # get the right locales directory, and instanciate a gettext
+        locale_dir = join(dirname(__file__), 'data', 'locales')
+        locales = gettext.translation('langapp', locale_dir, languages=[lang])
+        self.ugettext = locales.gettext
+        self.lang = lang
 
-                BoxLayout:
-                    orientation: 'vertical'
-
-                    MDToolbar:
-                        title: app.title
-                        elevation: 10
-                        left_action_items: [['menu', lambda x: nav_drawer.set_state("open")]]
-                        right_action_items: [["star-outline", lambda x: app.on_star_click()]]
-                        md_bg_color: 0, 0, 0, 1
-
-                    MDTabs:
-                        id: tabs
-                        on_tab_switch: app.on_tab_switch(*args)
-                        height: "48dp"
-                        tab_indicator_anim: False
-                        background_color: 0.1, 0.1, 0.1, 1
-                            
-                        Tab:
-                            id: tab1
-                            name: 'tab1'
-                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['calculator-variant']}[/size][/font] Input"                         
-                                    
-                            BoxLayout:
-                                orientation: 'vertical'
-                                padding: "10dp"
-                                        
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                            
-                                    MDIconButton:
-                                        icon: "calendar-month"
-                                                
-                                    MDTextField:
-                                        id: start_date
-                                        hint_text: "Start date"
-                                        on_focus: if self.focus: app.date_dialog.open()
-                                        color_mode: 'custom'
-                                        line_color_focus: 0,0,0,1
-                                        text_color: 0,0,0,1
-                                        current_hint_text_color: 0,0,0,1
-                                        text_hint_color: 0,0,1,1
-                                                
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                            
-                                    MDIconButton:
-                                        icon: "cash"
-                                                
-                                    MDTextField:
-                                        id: loan
-                                        name: 'loan'
-                                        hint_text: "Loan"
-                                        color_mode: 'custom'
-                                        line_color_focus: 0,0,0,1
-                                        text_color: 0,0,0,1
-                                        current_hint_text_color: 0,0,0,1
-                                        input_filter: 'float'
-                                        helper_text_mode: "on_focus"
-                                                                                        
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                            
-                                    MDIconButton:
-                                        icon: "clock-time-five-outline"
-                                                
-                                    MDTextField:
-                                        id: months
-                                        name: 'months'
-                                        hint_text: "Months"
-                                        color_mode: 'custom'
-                                        line_color_focus: 0,0,0,1
-                                        text_color: 0,0,0,1
-                                        current_hint_text_color: 0,0,0,1
-                                        input_filter: 'int'
-                                        helper_text_mode: "on_focus"                                        
-
-                                                
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                            
-                                    MDIconButton:
-                                        icon: "bank"
-                                                
-                                    MDTextField:
-                                        id: interest
-                                        name: 'interest'
-                                        hint_text: "Interest, %"
-                                        color_mode: 'custom'
-                                        line_color_focus: 0,0,0,1
-                                        text_color: 0,0,0,1
-                                        current_hint_text_color: 0,0,0,1
-                                        input_filter: 'float'
-                                        helper_text_mode: "on_focus"                                          
-                                                
-                                    MDTextField:
-                                        id: payment_type
-                                        name: 'payment_type'
-                                        hint_text: "Payment type"
-                                        on_focus: if self.focus: app.menu.open()    
-                                        color_mode: 'custom'
-                                        line_color_focus: 0,0,0,1
-                                        text_color: 0,0,0,1
-                                        current_hint_text_color: 0,0,0,1
-                                                                                
-                                            
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"     
-                                                         
-                                    MDLabel:
-                                        text: "Payment"
-                                        
-                                    MDTextField:
-                                        id: payment_label
-                                        hint_text: ""
-                                        disabled: True
-                                        
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"  
-                                    
-                                    MDLabel:
-                                        text: "Total interest"  
-                                        
-                                    MDTextField:
-                                        id: overpayment_loan_label
-                                        hint_text: ""
-                                        disabled: True
-                                        
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"  
-                                    
-                                    MDLabel:
-                                        text: "Total payments" 
-                                        
-                                    MDTextField:
-                                        id: total_amount_of_payments_label
-                                        hint_text: ""
-                                        disabled: True
-                                        
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp" 
-                                    
-                                    MDLabel:
-                                        text: "Effective %" 
-                                        
-                                    MDTextField:
-                                        id: effective_interest_rate_label
-                                        hint_text: ""
-                                        disabled: True
-                                        text_hint_color: [0,0,1,1]
-
-                                    
-                        Tab:
-                            id: tab2
-                            name: 'tab2'
-                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['table-large']}[/size][/font] Table"                          
-                            
-                            ScrollView:
-                            
-                                BoxLayout:
-                                    orientation: 'vertical'
-                                    id: calc_data_table
-                                    
-                            MDFloatingActionButton:
-                                icon: "email-outline"
-                                pos: 20, 20
-                                on_release: app.show_confirmation_dialog()
-                                
-                        Tab:
-                            id: tab3
-                            name: 'tab3'
-                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['chart-areaspline']}[/size][/font] Graph"
-                            
-                            BoxLayout:
-                                orientation: 'vertical'
-                                padding: "10dp"
-                                
-                                BoxLayout:
-                                    orientation: 'vertical'
-                                    padding: "10dp"
-                                    size_hint_x: 1
-                                    size_hint_y: None
-                                    height: 50
-                                    
-                                    canvas:
-                                        Color:
-                                            rgba: 0.2, 0.2, 0.2, 0.1
-                                        Rectangle:
-                                            size: self.size
-                                            pos: self.pos
-                                            
-                                    MDLabel:
-                                        text: "Payment"            
-                                        halign: "center"
-                                        font_style: "H5"
-                                        height: "48dp"
-                                    
-                                BoxLayout:
-                                    orientation: 'vertical'
-                                    padding: "10dp"
-                                    id: graph
-                                
-                                    canvas:
-                                        Color:
-                                            rgba: 1, 1, 1, 1
-                                        Rectangle:
-                                            size: self.size
-                                            pos: self.pos
-
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    size_hint_x: 1
-                                    size_hint_y: None
-                                    height: 50
-                                    
-                                    MDIcon:
-                                        icon: "checkbox-blank"
-                                        halign: "right"
-                                        color: 0, 0, 1, 1
-                                        
-                                    MDLabel:
-                                        text: "Interest"
-                                        halign: "left"
-                                        font_style: "H6"
-                                        height: "48dp"
-                                        
-                                    MDIcon:
-                                        icon: "checkbox-blank"
-                                        halign: "right"
-                                        color: 1, 0, 0, 1
-                                        
-                                    MDLabel:
-                                        text: "Principal"
-                                        halign: "left"
-                                        font_style: "H6"
-                                        height: "48dp"                                    
-                               
-                        Tab:
-                            id: tab4
-                            name: 'tab4'
-                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['chart-pie']}[/size][/font] Chart"
-                            
-                            BoxLayout:
-                                orientation: 'vertical'
-                                padding: "10dp"
+        # update all the kv rules attached to this text
+        for func, largs, kwargs in self.observers:
+            func(largs, None, None)
 
 
-                                BoxLayout:
-                                    orientation: 'vertical'
-                                    padding: "10dp"
-                                    size_hint_x: 1
-                                    size_hint_y: None
-                                    height: 50
-                                                                       
-                                    canvas:
-                                        Color:
-                                            rgba: 0.2, 0.2, 0.2, 0.1
-                                        Rectangle:
-                                            size: self.size
-                                            pos: self.pos
-                                
-                                    MDLabel:
-                                        text: "Total payments"
-                                        halign: "center"
-                                        font_style: "H5"
-                                        height: "48dp"
-                                    
-                                BoxLayout:
-                                    orientation: 'vertical'
-                                    padding: "10dp"
-                                    id: chart
-                                    
-                                    canvas:
-                                        Color:
-                                            rgba: 1, 1, 1, .6
-                                        Rectangle:
-                                            size: self.size
-                                            pos: self.pos
-                                            
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    size_hint_x: 1
-                                    size_hint_y: None
-                                    height: 50
+tr = Lang("en")
+# internationalized Kivy Application
 
-                                    MDIcon:
-                                        icon: "checkbox-blank"
-                                        halign: "right"
-                                        color: 0, 0, 1, 1
-                                        
-                                    MDLabel:
-                                        text: "Interest"
-                                        halign: "left"
-                                        font_style: "H6"
-                                        height: "48dp"
-                                        
-                                    MDIcon:
-                                        icon: "checkbox-blank"
-                                        halign: "right"
-                                        color: 1, 0, 0, 1
-                                        
-                                    MDLabel:
-                                        text: "Principal"
-                                        halign: "left"
-                                        font_style: "H6"
-                                        height: "48dp"                                    
+# 1) download and install! http://gnuwin32.sourceforge.net/packages/gettext.htm
+# https://mlocati.github.io/articles/gettext-iconv-windows.html
+# 2) Copy files from "C:\Program Files (x86)\gettext-iconv\bin" to project folder!
+# 3) run commands from Makefile
 
-                                                                                                                        
-                        Tab:
-                            id: tab5
-                            name: 'tab5'
-                            text: f"[size=20][font={fonts[-1]['fn_regular']}]{md_icons['book-open-variant']}[/size][/font] Sum"                             
-                      
-                            BoxLayout:
-                                orientation: 'vertical'
-                                padding: "10dp"
 
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    spacing: "10dp"
-                               
-                                    MDLabel:
-                                        text: "Property value"
-                                        halign: "right"
-                                        bold: True
-                                                                           
-                                    MDLabel:
-                                        id: sum_property_value_label
-                                        halign: "left"
-                                                                               
-                                    MDLabel:
-                                        text: "Payment"
-                                        halign: "right"
-                                        bold:True
-                                        
-                                    MDLabel:
-                                        id: sum_payment_label
-                                        halign: "left"
-                                
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    spacing: "10dp"
-                               
-                                    MDLabel:
-                                        text: "Interest"
-                                        halign: "right"
-                                        bold: True
-                                        
-                                    MDLabel:
-                                        id: sum_interest_label
-                                        halign: "left"
-                                                                               
-                                    MDLabel:
-                                        text: "Total interest"
-                                        halign: "right"
-                                        bold: True
-                                        
-                                    MDLabel:
-                                        id: sum_overpayment_loan_label
-                                        halign: "left"
-                                
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    spacing: "10dp"
-                               
-                                    MDLabel:
-                                        text: "Start date"
-                                        halign: "right"
-                                        bold: True
-                                        
-                                    MDLabel:
-                                        id: sum_start_date_label
-                                        halign: "left"
-                                        
-                                    MDLabel:
-                                        text: "Payments type"
-                                        halign: "right"
-                                        bold: True                                       
-                                        
-                                    MDLabel:
-                                        id: sum_payments_type_label
-                                        halign: "left"
-                                        
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    spacing: "10dp"
-                               
-                                    MDLabel:
-                                        text: "End date"
-                                        halign: "right"
-                                        bold: True                                       
-                                        
-                                    MDLabel:
-                                        id: sum_end_date_label
-                                        halign: "left"
-
-                                    MDLabel:
-                                        text: "Effective %"
-                                        halign: "right"
-                                        bold: True
-                                        
-                                    MDLabel:
-                                        id: sum_effective_interest_rate_label
-                                        halign: "left"
-                                    
-                                BoxLayout:
-                                    orientation: 'horizontal'
-                                    padding: "10dp"
-                                    spacing: "10dp"
-                               
-                                    MDLabel:
-                                        text: "Total payments"
-                                        halign: "right"
-                                        bold: True
-                                        
-                                    MDLabel:
-                                        id: sum_total_amount_of_payments_label
-                                        halign: "left"
-
-                                    MDLabel:
-                                        text: "Term length"
-                                        halign: "right"
-                                        bold: True
-
-                                    MDLabel:
-                                        id: sum_term_length_label
-                                        halign: "left"
-
-                                
-                                
-        MDNavigationDrawer:            
-            id: nav_drawer
-
-            ContentNavigationDrawer:
-                id: content_drawer     
-
-<ContentDialogSend> 
-    orientation: "vertical"
-    spacing: "12dp"
-    size_hint_y: None
-    height: "120dp"
-    
-    MDTextField:
-        hint_text: "City"
-
-    MDTextField:
-        hint_text: "Street"                                                   
-'''
+# Now all elements of interface are in file app_interface.kv
+KV = open('app_interface.kv', 'r').read()
 
 
 class ContentNavigationDrawer(MDBoxLayout):
@@ -685,9 +221,16 @@ def share(title, text):
 
 
 class MortgageCalculatorApp(MDApp):
-    title = "Mortgage Calculator"
-    by_who = "автор: Меншиков В.А."
+    #title = "Mortgage Calculator"
+    #by_who = "автор: Меншиков В.А."
     dialog = None
+    lang = StringProperty('en')
+    data_tables = None
+    current_tab = 'tab1'
+
+    def on_lang(self, instance, lang):
+        print('switched')
+        tr.switch_lang(lang)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -745,7 +288,7 @@ class MortgageCalculatorApp(MDApp):
                 if len(self.screen.ids.loan.text) > 9:
                     self.screen.ids.loan.text = self.screen.ids.loan.text[0:9]
                 self.calc_1st_screen()
-                # self.data_for_calc_is_changed = True
+                self.data_for_calc_is_changed = True
             elif instance.name == 'months':
                 self.screen.ids.months.helper_text = ""
                 if len(self.screen.ids.months.text) > 4:
@@ -753,7 +296,7 @@ class MortgageCalculatorApp(MDApp):
                 if int(self.screen.ids.months.text) > 1200:
                     self.screen.ids.months.text = "1200"
                 self.calc_1st_screen()
-                # self.data_for_calc_is_changed = True
+                self.data_for_calc_is_changed = True
             elif instance.name == 'interest':
                 self.screen.ids.interest.helper_text = ""
                 if len(self.screen.ids.interest.text) > 4:
@@ -761,7 +304,7 @@ class MortgageCalculatorApp(MDApp):
                 if float(self.screen.ids.interest.text) > 1000:
                     self.screen.ids.interest.text = "1000"
                 self.calc_1st_screen()
-                # self.data_for_calc_is_changed = True
+                self.data_for_calc_is_changed = True
 
 
     def validate_on_nums_input(self, instance_textfield, value):
@@ -849,6 +392,8 @@ class MortgageCalculatorApp(MDApp):
 
         # print(self.root.ids.tabs.get_tab_list())
 
+        pass
+
     def on_tab_switch(self, *args):
         # def on_tab_switch(self, instance_tabs, instance_tab, instance_tab_label, tab_text):
         '''Called when switching tabs.
@@ -859,6 +404,7 @@ class MortgageCalculatorApp(MDApp):
                 :param tab_text: text or name icon of tab;
                 '''
         # print(instance_tab.name + " : " + tab_text)
+        self.current_tab = args[1].name
         # print(args)
         # print("tab clicked! " + instance_tab.ids.label.text)
         ############# instance_tab/ids.label.text = tab_text
@@ -869,6 +415,13 @@ class MortgageCalculatorApp(MDApp):
         pass
 
     def on_star_click(self):
+        if self.lang == 'en':
+            self.lang = 'ru'
+        elif self.lang == 'ru':
+            self.lang = 'en'
+        print(self.current_tab)
+        self.screen.ids.tabs.switch_tab(self.current_tab)
+        self.calc_table(self)
         pass
 
     def calc_table(self, *args):
@@ -924,21 +477,22 @@ class MortgageCalculatorApp(MDApp):
 
         # tab2
         # https://kivymd.readthedocs.io/en/latest/components/datatables/?highlight=datatable
-        data_tables = MDDataTable(
+        self.data_tables = MDDataTable(
             use_pagination=True,
+            pagination_menu_pos='center',
             rows_num=10,
             column_data=[
                 ("№", dp(10)),
-                ("Date", dp(20)),
-                ("Payment", dp(20)),
-                ("Interest", dp(20)),
-                ("Principal", dp(20)),
-                ("Debt", dp(20)),
+                (tr._('Date'), dp(20)),
+                (tr._('Payment'), dp(20)),
+                (tr._('Interest'), dp(20)),
+                (tr._('Principal'), dp(20)),
+                (tr._('Debt'), dp(20)),
             ],
             row_data=row_data_for_tab,
         )
         self.screen.ids.calc_data_table.clear_widgets()
-        self.screen.ids.calc_data_table.add_widget(data_tables)
+        self.screen.ids.calc_data_table.add_widget(self.data_tables)
 
         # tab5
         self.screen.ids.sum_payment_label.text = str(round(monthly_payment, 2))
