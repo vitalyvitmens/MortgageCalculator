@@ -227,6 +227,8 @@ class MortgageCalculatorApp(MDApp):
     lang = StringProperty('en')
     data_tables = None
     current_tab = 'tab1'
+    payment_annuity = True
+    menu = None    # for recreate menu on lang change
 
     def on_lang(self, instance, lang):
         print('switched')
@@ -242,8 +244,8 @@ class MortgageCalculatorApp(MDApp):
         self.screen = Builder.load_string(KV)
         # https://kivymd.readthedocs.io/en/latest/components/menu/?highlight=MDDropDownItem#center-position
         # menu_items = [{"icon": "git", "text": f"Item {i}"} for i in range(5)]
-        menu_items = [{"icon": "format-text-rotation-angle-up", "text": "annuity"},
-                      {"icon": "format-text-rotation-angle-down", "text": "differentiated"}]
+        menu_items = [{"icon": "format-text-rotation-angle-up", "text": tr._('annuity')},
+                      {"icon": "format-text-rotation-angle-down", "text": tr._('differentiated')}]
         self.menu = MDDropdownMenu(
             caller=self.screen.ids.payment_type,
             items=menu_items,
@@ -271,6 +273,23 @@ class MortgageCalculatorApp(MDApp):
             on_touch_down=self.validate_on_nums_input,
             focus=self.on_focus,
         )
+
+    #https://kivymd.readthedocs.io/en/latest/components/menu/?highlight=MDDropdownMenu#create-submenu
+    def update_menu(self):
+        self.menu = None
+        menu_items = [{"icon": "format-text-rotation-angle-up", "text": tr._('annuity')},
+                      {"icon": "format-text-rotation-angle-down", "text": tr._('differentiated')}]
+        self.menu = MDDropdownMenu(
+            caller=self.screen.ids.payment_type,
+            items=menu_items,
+            position="auto",
+            width_mult=4,
+        )
+        self.menu.bind(on_release=self.set_item)
+        if self.payment_annuity:
+            self.screen.ids.payment_type.text = tr._('annuity')
+        else:
+            self.screen.ids.payment_type.text = tr._('differentiated')
 
     def on_focus(self, instance, value):
         if value:
@@ -315,6 +334,17 @@ class MortgageCalculatorApp(MDApp):
         def set_item(interval):
             self.screen.ids.payment_type.text = instance_menu_item.text
             instance_menu.dismiss()
+            before_change = self.payment_annuity
+            before_change = self.payment_annuity
+            if tr._(self.screen.ids.payment_type.text) == tr._('annuity'):
+                self.payment_annuity = True
+            else:
+                self.payment_annuity = False
+            print(self.payment_annuity)
+            if before_change != self.payment_annuity:
+                print("value is changed for payment type")
+                self.calc_1st_screen()
+                self.data_for_calc_is_changed = True
 
         Clock.schedule_once(set_item, 0.5)
 
@@ -344,12 +374,34 @@ class MortgageCalculatorApp(MDApp):
         months = int(months)
         interest = float(interest)
         percent = interest / 100 / 12
-        monthly_payment = loan * (percent + percent / ((1 + percent) ** months - 1))
-        total_amount_of_payments = monthly_payment * months
-        overpayment_loan = total_amount_of_payments - loan
-        effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
 
-        self.screen.ids.payment_label.text = str(round(monthly_payment, 2))
+        if self.payment_annuity:
+            monthly_payment = loan * (percent + percent / ((1 + percent) ** months - 1))
+            total_amount_of_payments = monthly_payment * months
+            overpayment_loan = total_amount_of_payments - loan
+            effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
+            self.screen.ids.payment_label.text = str(round(monthly_payment, 2))
+        else:
+            repayment_of_interest = loan * percent
+            repayment_of_loan_body = loan / months
+            max_monthly_payment = repayment_of_interest + repayment_of_loan_body
+
+            total_amount_of_payments = 0
+            overpayment_loan = 0
+
+            debt_end_month = loan
+            for i in range(0, months):
+                repayment_of_interest = debt_end_month * percent
+                debt_end_month = debt_end_month - repayment_of_loan_body
+                monthly_payment = repayment_of_interest + repayment_of_loan_body
+                total_amount_of_payments += monthly_payment
+                overpayment_loan += repayment_of_interest
+            min_monthly_payment = monthly_payment
+
+            effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
+            self.screen.ids.payment_label.text = str(round(min_monthly_payment, 2)) + " ... " + str(round(max_monthly_payment, 2))
+
+        #self.screen.ids.payment_label.text = str(round(monthly_payment, 2))
         self.screen.ids.total_amount_of_payments_label.text = str(round(total_amount_of_payments, 2))
         self.screen.ids.overpayment_loan_label.text = str(round(overpayment_loan, 2))
         self.screen.ids.effective_interest_rate_label.text = str(round(effective_interest_rate, 2))
@@ -359,7 +411,7 @@ class MortgageCalculatorApp(MDApp):
         self.screen.ids.loan.text = "50000"
         self.screen.ids.months.text = "12"
         self.screen.ids.interest.text = "22"
-        self.screen.ids.payment_type.text = "annuity"
+        #self.screen.ids.payment_type.text = "annuity"
 
         self.calc_1st_screen()
         icons_item_menu_lines = {
@@ -422,6 +474,7 @@ class MortgageCalculatorApp(MDApp):
         print(self.current_tab)
         self.screen.ids.tabs.switch_tab(self.current_tab)
         self.calc_table(self)
+        self.update_menu()
         pass
 
     def calc_table(self, *args):
@@ -448,21 +501,51 @@ class MortgageCalculatorApp(MDApp):
         next_date = start_date
         next_prev_date = next_date
 
-        debt_end_month = loan
-        for i in range(0, months):
-            repayment_of_interest = debt_end_month * percent
-            repayment_of_loan_body = monthly_payment - repayment_of_interest
-            debt_end_month = debt_end_month - repayment_of_loan_body
-            # print(monthly_payment, repayment_of_interest, repayment_of_loan_body, debt_end_month)
-            row_data_for_tab.append(
-                [i + 1, next_date.strftime("%d-%m-%Y"), round(monthly_payment, 2), round(repayment_of_interest, 2),
-                 round(repayment_of_loan_body, 2), round(debt_end_month, 2)])
-            next_prev_date = next_date
-            next_date = next_month_date(next_date)
-        total_amount_of_payments = monthly_payment * months
-        overpayment_loan = total_amount_of_payments - loan
-        effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
-        # print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
+        min_monthly_payment = 0
+        max_monthly_payment = 0
+
+        if self.payment_annuity:
+            monthly_payment = loan * (percent + percent / ((1 + percent) ** months - 1))
+            # print(monthly_payment)
+            debt_end_month = loan
+            for i in range(0, months):
+                repayment_of_interest = debt_end_month * percent
+                repayment_of_loan_body = monthly_payment - repayment_of_interest
+                debt_end_month = debt_end_month - repayment_of_loan_body
+                # print(monthly_payment, repayment_of_interest, repayment_of_loan_body, debt_end_month)
+                row_data_for_tab.append(
+                    [i + 1, next_date.strftime("%d-%m-%Y"), round(monthly_payment, 2), round(repayment_of_interest, 2),
+                     round(repayment_of_loan_body, 2), round(debt_end_month, 2)])
+                next_prev_date = next_date
+                next_date = next_month_date(next_date)
+            total_amount_of_payments = monthly_payment * months
+            overpayment_loan = total_amount_of_payments - loan
+            effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
+            # print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
+        else:
+            repayment_of_interest = loan * percent
+            repayment_of_loan_body = loan / months
+            max_monthly_payment = repayment_of_interest + repayment_of_loan_body
+            # print(monthly_payment)
+            total_amount_of_payments = 0
+            overpayment_loan = 0
+            debt_end_month = loan
+            for i in range(0, months):
+                repayment_of_interest = debt_end_month * percent
+                debt_end_month = debt_end_month - repayment_of_loan_body
+                monthly_payment = repayment_of_interest + repayment_of_loan_body
+                total_amount_of_payments += monthly_payment
+                overpayment_loan += repayment_of_interest
+                # print(monthly_payment, repayment_of_interest, repayment_of_loan_body, debt_end_month)
+                row_data_for_tab.append(
+                    [i + 1, next_date.strftime("%d-%m-%Y"), round(monthly_payment, 2), round(repayment_of_interest, 2),
+                     round(repayment_of_loan_body, 2), round(debt_end_month, 2)])
+                next_prev_date = next_date
+                next_date = next_month_date(next_date)
+            min_monthly_payment = monthly_payment
+
+            effective_interest_rate = ((total_amount_of_payments / loan - 1) / (months / 12)) * 100
+            # print(total_amount_of_payments, overpayment_loan, effective_interest_rate)
 
         # show_canvas_stress(self.screen.ids.graph)
         show_canvas_stress(self.screen.ids.chart)
@@ -495,6 +578,11 @@ class MortgageCalculatorApp(MDApp):
         self.screen.ids.calc_data_table.add_widget(self.data_tables)
 
         # tab5
+        if self.payment_annuity:
+            self.screen.ids.sum_payment_label.text = str(round(monthly_payment, 2))
+        else:
+            self.screen.ids.sum_payment_label.text = str(round(min_monthly_payment, 2)) + " ... " + str(round(max_monthly_payment, 2))
+
         self.screen.ids.sum_payment_label.text = str(round(monthly_payment, 2))
         self.screen.ids.sum_total_amount_of_payments_label.text = str(round(total_amount_of_payments, 2))
         self.screen.ids.sum_overpayment_loan_label.text = str(round(overpayment_loan, 2))

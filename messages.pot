@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-08-26 09:38+0300\n"
+"POT-Creation-Date: 2021-09-25 18:04+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: main.py:247 main.py:280 main.py:290 main.py:337 app_interface.kv:165
+#: main.py:247 main.py:280 main.py:290 main.py:339 app_interface.kv:165
 msgid "annuity"
 msgstr ""
 
@@ -25,24 +25,24 @@ msgstr ""
 msgid "differentiated"
 msgstr ""
 
-#: main.py:577
+#: main.py:569
 msgid "Date"
 msgstr ""
 
-#: main.py:578
+#: main.py:570
 msgid "Payment"
 msgstr ""
 
-#: main.py:579 app_interface.kv:153 app_interface.kv:295 app_interface.kv:366
+#: main.py:571 app_interface.kv:153 app_interface.kv:295 app_interface.kv:366
 #: app_interface.kv:422
 msgid "Interest"
 msgstr ""
 
-#: main.py:580 app_interface.kv:306 app_interface.kv:377
+#: main.py:572 app_interface.kv:306 app_interface.kv:377
 msgid "Principal"
 msgstr ""
 
-#: main.py:581
+#: main.py:573
 msgid "Debt"
 msgstr ""
 
@@ -51,7 +51,7 @@ msgid "Mortgage Calculator"
 msgstr ""
 
 #: app_interface.kv:45
-msgid "author Oleg Shpagin"
+msgid "author Vitaly Menshikov"
 msgstr ""
 
 #: app_interface.kv:87
